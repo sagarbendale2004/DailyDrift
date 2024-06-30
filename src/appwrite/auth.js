@@ -1,5 +1,5 @@
 import config from "../config/config";
-import { Client, Account, Id } from "appwrite";
+import { Client, Account, ID } from "appwrite";
 
 export class AuthService {
   client = new Client();
@@ -12,17 +12,18 @@ export class AuthService {
     this.account = new Account(this.client);
   }
 
+  // Create a new account and log in the user
   async createAccount({ email, password, name }) {
     try {
       const userAccount = await this.account.create(
-        Id.unique(),
+        ID.unique(),
         email,
         password,
         name
       );
 
       if (userAccount) {
-        // call another method
+        // If account creation is successful, log in the user
         return this.login({ email, password });
       } else {
         return userAccount;
@@ -33,6 +34,7 @@ export class AuthService {
     }
   }
 
+  // Log in the user
   async login({ email, password }) {
     try {
       return await this.account.createEmailSession(email, password);
@@ -42,15 +44,23 @@ export class AuthService {
     }
   }
 
+  // Get the current logged-in user's information
   async getCurrentUser() {
     try {
       return await this.account.get();
     } catch (error) {
-      console.error("Error getting current user:", error);
+      if (
+        error.message.includes("User (role: guests) missing scope (account)")
+      ) {
+        console.error("User is not authenticated. Please log in.");
+      } else {
+        console.error("Error getting current user:", error);
+      }
       throw error;
     }
   }
 
+  // Log out the current user
   async logout() {
     try {
       return await this.account.deleteSessions();
