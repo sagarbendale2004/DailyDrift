@@ -36,7 +36,9 @@ function App() {
       </div>
     </div>
   ) : (
-    <h1>loading...</h1>
+    <div className="loading-div">
+      <div className="loader"></div>
+    </div>
   );
 }
 
