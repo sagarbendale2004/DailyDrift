@@ -37,7 +37,7 @@ export class AuthService {
   // Log in the user
   async login({ email, password }) {
     try {
-      return await this.account.createEmailSession(email, password);
+      return await this.account.createEmailPasswordSession(email, password);
     } catch (error) {
       console.error("Error logging in:", error);
       throw error;

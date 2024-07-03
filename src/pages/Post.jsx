@@ -1,8 +1,9 @@
 // eslint-disable-next-line no-unused-vars
 import React, { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import appwriteService from "../appwrite/configuration";
-import { Button, Container } from "../components";
+import service from "../appwrite/configuration";
+import Button from "../components/Button";
+import Container from "../components/Container/Container";
 import parse from "html-react-parser";
 import { useSelector } from "react-redux";
 
@@ -17,7 +18,7 @@ export default function Post() {
 
   useEffect(() => {
     if (slug) {
-      appwriteService.getPost(slug).then((post) => {
+      service.getPost(slug).then((post) => {
         if (post) setPost(post);
         else navigate("/");
       });
@@ -25,9 +26,9 @@ export default function Post() {
   }, [slug, navigate]);
 
   const deletePost = () => {
-    appwriteService.deletePost(post.$id).then((status) => {
+    service.deletePost(post.$id).then((status) => {
       if (status) {
-        appwriteService.deleteFile(post.featuredImage);
+        service.deleteFile(post.featuredimage);
         navigate("/");
       }
     });
@@ -38,7 +39,7 @@ export default function Post() {
       <Container>
         <div className="w-full flex justify-center mb-4 relative border rounded-xl p-2">
           <img
-            src={appwriteService.getFilePreview(post.featuredImage)}
+            src={service.getFilePreview(post.featuredimage)}
             alt={post.title}
             className="rounded-xl"
           />

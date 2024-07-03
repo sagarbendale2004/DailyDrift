@@ -1,8 +1,8 @@
 // eslint-disable-next-line no-unused-vars
 import React from "react";
 
-function Button({
-  btnText,
+export default function Button({
+  children,
   type = "button",
   bgColor = "bg-blue-600",
   textColor = "text-white",
@@ -12,12 +12,10 @@ function Button({
   return (
     <button
       type={type}
-      className={`px-4 py-2 rounded-lg ${className} ${bgColor} ${textColor}`}
+      className={`px-4 py-2 rounded-lg ${bgColor} ${textColor} ${className}`}
       {...props}
     >
-      {btnText}
+      {children}
     </button>
   );
 }
-
-export default Button;

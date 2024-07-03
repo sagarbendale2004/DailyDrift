@@ -1,6 +1,6 @@
 // eslint-disable-next-line no-unused-vars
 import React, { useEffect, useState } from "react";
-import appwriteService from "../appwrite/configuration";
+import service from "../appwrite/configuration";
 import Container from "../components/Container/Container";
 import PostCard from "../components/PostCard";
 
@@ -8,7 +8,7 @@ function Home() {
   const [posts, setPosts] = useState([]);
 
   useEffect(() => {
-    appwriteService.getPosts().then((posts) => {
+    service.getPosts().then((posts) => {
       if (posts) {
         setPosts(posts.documents);
       }

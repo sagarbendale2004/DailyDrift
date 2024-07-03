@@ -1,6 +1,7 @@
 // eslint-disable-next-line no-unused-vars
 import React from "react";
-import { Container, PostForm } from "../components";
+import Container from "../components/Container/Container";
+import PostForm from "../components/Post-Form/PostForm";
 
 function AddPost() {
   return (

@@ -1,6 +1,6 @@
 // eslint-disable-next-line no-unused-vars
 import React from "react";
-import { Signup as SignupComponent } from "../components";
+import { Signup as SignupComponent } from "../components/Signup";
 
 function Signup() {
   return (
