@@ -1,5 +1,5 @@
 import config from "../config/config";
-import { Client, ID, Databases, Storage, Query } from "appwrite";
+import { Client, Databases, Storage, ID, Query } from "appwrite";
 
 export class Service {
   client = new Client();
@@ -16,6 +16,11 @@ export class Service {
 
   async createPost({ title, slug, content, featuredimage, status, userId }) {
     try {
+      // Validate the slug length and characters here
+      if (slug.length > 36 || !/^[a-zA-Z0-9\-_.]+$/.test(slug)) {
+        throw new Error("Invalid slug format.");
+      }
+
       return await this.databases.createDocument(
         config.appwriteDatabaseId,
         config.appwriteCollectionId,
@@ -29,12 +34,18 @@ export class Service {
         }
       );
     } catch (error) {
-      console.log("Appwrite serive :: createPost :: error", error);
+      console.log("Appwrite service :: createPost :: error", error);
+      throw error;
     }
   }
 
   async updatePost(slug, { title, content, featuredimage, status }) {
     try {
+      // Validate the slug length and characters here
+      if (slug.length > 36 || !/^[a-zA-Z0-9\-_.]+$/.test(slug)) {
+        throw new Error("Invalid slug format.");
+      }
+
       return await this.databases.updateDocument(
         config.appwriteDatabaseId,
         config.appwriteCollectionId,
@@ -47,7 +58,8 @@ export class Service {
         }
       );
     } catch (error) {
-      console.log("Appwrite serive :: updatePost :: error", error);
+      console.log("Appwrite service :: updatePost :: error", error);
+      throw error; // Ensure errors propagate correctly
     }
   }
 
@@ -60,7 +72,7 @@ export class Service {
       );
       return true;
     } catch (error) {
-      console.log("Appwrite serive :: deletePost :: error", error);
+      console.error("Appwrite service :: deletePost :: error", error.message);
       return false;
     }
   }
@@ -73,8 +85,8 @@ export class Service {
         slug
       );
     } catch (error) {
-      console.log("Appwrite serive :: getPost :: error", error);
-      return false;
+      console.error("Appwrite service :: getPost :: error", error.message);
+      return null;
     }
   }
 
@@ -86,12 +98,12 @@ export class Service {
         queries
       );
     } catch (error) {
-      console.log("Appwrite serive :: getPosts :: error", error);
-      return false;
+      console.error("Appwrite service :: getPosts :: error", error.message);
+      return null;
     }
   }
 
-  // file upload service
+  // File upload service
 
   async uploadFile(file) {
     try {
@@ -101,8 +113,8 @@ export class Service {
         file
       );
     } catch (error) {
-      console.log("Appwrite serive :: uploadFile :: error", error);
-      return false;
+      console.error("Appwrite service :: uploadFile :: error", error.message);
+      return null;
     }
   }
 
@@ -111,7 +123,7 @@ export class Service {
       await this.bucket.deleteFile(config.appwriteBucketId, fileId);
       return true;
     } catch (error) {
-      console.log("Appwrite serive :: deleteFile :: error", error);
+      console.error("Appwrite service :: deleteFile :: error", error.message);
       return false;
     }
   }

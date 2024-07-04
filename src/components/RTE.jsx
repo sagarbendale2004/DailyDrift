@@ -11,11 +11,12 @@ export default function RTE({ name, control, label, defaultValue = "" }) {
       <Controller
         name={name || "content"}
         control={control}
-        render={({ filed: { onChange } }) => (
+        render={({ field: { onChange } }) => (
           <Editor
             initialValue={defaultValue}
             init={{
               initialValue: defaultValue,
+              branding: false,
               height: 500,
               menubar: true,
               plugins: [
@@ -40,9 +41,11 @@ export default function RTE({ name, control, label, defaultValue = "" }) {
                 "wordcount",
               ],
               toolbar:
-                "undo redo | formselect | bold italic backcolor | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | removeformat | help",
+                "undo redo | formatselect | bold italic backcolor | \
+                alignleft aligncenter alignright alignjustify | \
+                bullist numlist outdent indent | removeformat | help",
               content_style:
-                "body { font-family:Helvetica, Arial, sans-serirf; font-size:14px }",
+                "body { font-family:Helvetica, Arial, sans-serif; font-size:14px }",
             }}
             onEditorChange={onChange}
           />

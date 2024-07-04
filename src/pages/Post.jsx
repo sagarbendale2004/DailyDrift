@@ -11,27 +11,37 @@ export default function Post() {
   const [post, setPost] = useState(null);
   const { slug } = useParams();
   const navigate = useNavigate();
-
   const userData = useSelector((state) => state.auth.userData);
 
-  const isAuthor = post && userData ? post.userId === userData.$id : false;
+  const isAuthor = post && userData && post.userId === userData.$id;
 
   useEffect(() => {
     if (slug) {
-      service.getPost(slug).then((post) => {
-        if (post) setPost(post);
-        else navigate("/");
-      });
-    } else navigate("/");
+      service
+        .getPost(slug)
+        .then((post) => {
+          if (post) setPost(post);
+          else navigate("/");
+        })
+        .catch((error) => {
+          console.error("Error fetching post:", error);
+          navigate("/");
+        });
+    } else {
+      navigate("/");
+    }
   }, [slug, navigate]);
 
-  const deletePost = () => {
-    service.deletePost(post.$id).then((status) => {
+  const deletePost = async () => {
+    try {
+      const status = await service.deletePost(post.$id);
       if (status) {
-        service.deleteFile(post.featuredimage);
+        await service.deleteFile(post.featuredimage);
         navigate("/");
       }
-    });
+    } catch (error) {
+      console.error("Error deleting post:", error);
+    }
   };
 
   return post ? (

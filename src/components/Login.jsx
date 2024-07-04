@@ -10,8 +10,12 @@ import { useForm } from "react-hook-form";
 function Login() {
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const { register, handleSubmit } = useForm();
-  const { error, setError } = useState("");
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm();
+  const [error, setError] = useState("");
 
   const login = async (data) => {
     setError("");
@@ -23,8 +27,8 @@ function Login() {
         navigate("/");
       }
     } catch (error) {
-      console.log("error in Login.jsx", error);
-      setError(error.message);
+      console.log("Error in Login:", error);
+      setError(error.message || "An error occurred during login.");
     }
   };
 
@@ -43,7 +47,7 @@ function Login() {
           Don&apos;t have any account&nbsp;
           <Link
             to="/signup"
-            className="font-medium text-primary transition-all duration-200 hover: underline"
+            className="font-medium text-primary transition-all duration-200 hover:underline"
           >
             Sign Up
           </Link>
@@ -58,29 +62,41 @@ function Login() {
               type="email"
               {...register("email", {
                 required: true,
-                validate: {
-                  pattern: (vlaue) =>
-                    /[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*@(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?/.test(
-                      vlaue
-                    ) || "Email address must be a valid address",
+                pattern: {
+                  value: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/i,
+                  message: "Email address must be a valid address",
                 },
-              })} // compulsory for every input
+              })}
             />
+            {errors.email && (
+              <p className="text-red-600 mt-1 text-sm">
+                {errors.email.message}
+              </p>
+            )}
+
             <Input
               label="Password"
               placeholder="Enter your password"
               type="password"
               {...register("password", {
                 required: true,
-                validate: {
-                  pattern: (value) =>
-                    /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[a-zA-Z]).{8,}$/.test(
-                      value
-                    ) ||
-                    " password must contain at least 1 uppercase letter, 1 lowercase letter, and 1 number",
+                minLength: {
+                  value: 8,
+                  message: "Password must be at least 8 characters long",
+                },
+                pattern: {
+                  value: /^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[a-zA-Z]).{8,}$/,
+                  message:
+                    "Password must contain at least 1 uppercase letter, 1 lowercase letter, and 1 number",
                 },
               })}
             />
+            {errors.password && (
+              <p className="text-red-600 mt-1 text-sm">
+                {errors.password.message}
+              </p>
+            )}
+
             <Button type="submit" className="w-full text-white py-4 text-xl">
               Sign In
             </Button>

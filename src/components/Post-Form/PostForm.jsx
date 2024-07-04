@@ -1,10 +1,11 @@
-// eslint-disable-next-line no-unused-vars
-import React, { useCallback } from "react";
+import React, { useCallback, useState } from "react";
 import { useForm } from "react-hook-form";
-import { Button, Input, Select, RTE } from "../index";
-import service from "../../appwrite/configuration";
+import { Button, Input, Select } from "../index";
+import RTE from "../RTE";
 import { useNavigate } from "react-router-dom";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
+import { createPost, updatePost } from "../../store/postSlice";
+import service from "../../appwrite/configuration";
 
 export default function PostForm({ post }) {
   const { register, handleSubmit, watch, setValue, control, getValues } =
@@ -17,41 +18,48 @@ export default function PostForm({ post }) {
       },
     });
 
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const userData = useSelector((state) => state.auth.userData);
 
   const submit = async (data) => {
-    if (post) {
-      const file = data.featuredimage[0]
-        ? await service.uploadFile(data.featuredimage[0])
-        : null;
-
-      if (file) {
-        service.deleteFile(post.featuredimage);
-      }
-
-      const dbPost = await service.updatePost(post.$id, {
-        ...data,
-        featuredimage: file ? file.$id : undefined,
-      });
-
-      if (dbPost) {
-        navigate(`/post/${dbPost.$id}`);
-      } else {
+    try {
+      setIsSubmitting(true);
+      let fileId;
+      if (data.featuredimage[0]) {
         const file = await service.uploadFile(data.featuredimage[0]);
-
-        if (file) {
-          const fileId = file.$id;
-          data.featuredimage = fileId;
-          const dbPost = await service.createPost({
-            ...data,
-            useId: userData.$id,
-          });
-          if (dbPost) {
-            navigate(`/post/${dbPost.$id}`);
-          }
-        }
+        fileId = file.$id;
       }
+
+      const postData = {
+        ...data,
+        featuredimage: fileId,
+        userId: userData.$id,
+      };
+
+      if (post) {
+        dispatch(updatePost({ postId: post.$id, postData })).then((result) => {
+          if (result.type === "posts/updatePost/fulfilled") {
+            navigate(`/post/${result.payload.$id}`);
+          } else {
+            throw new Error("Failed to update post.");
+          }
+        });
+      } else {
+        dispatch(createPost(postData)).then((result) => {
+          if (result.type === "posts/createPost/fulfilled") {
+            navigate(`/post/${result.payload.$id}`);
+          } else {
+            throw new Error("Failed to create post.");
+          }
+        });
+      }
+    } catch (error) {
+      console.error("Error submitting post:", error);
+      alert("Failed to submit post. Please try again later.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -59,11 +67,10 @@ export default function PostForm({ post }) {
     if (value && typeof value === "string") {
       return value
         .trim()
-        .toLocaleLowerCase()
-        .replace(/^[a-zA-Z\d\s]+/g, "-")
+        .toLowerCase()
+        .replace(/[^a-zA-Z\d\s]/g, "")
         .replace(/\s/g, "-");
     }
-
     return "";
   }, []);
 
@@ -112,12 +119,12 @@ export default function PostForm({ post }) {
           type="file"
           className="mb-4"
           accept="image/png, image/jpg, image/jpeg, image/gif"
-          {...register("image", { required: !post })}
+          {...register("featuredimage", { required: !post })}
         />
         {post && (
           <div className="w-full mb-4">
             <img
-              src={service.getFilePreview(post.featuredImage)}
+              src={service.getFilePreview(post.featuredimage)}
               alt={post.title}
               className="rounded-lg"
             />
@@ -133,8 +140,20 @@ export default function PostForm({ post }) {
           type="submit"
           bgColor={post ? "bg-green-500" : undefined}
           className="w-full"
+          disabled={isSubmitting}
         >
-          {post ? "Update" : "Submit"}
+          {isSubmitting ? (
+            <div className="flex items-center justify-center">
+              Submitting...
+              <div className="ml-2 spinner-border text-light" role="status">
+                <span className="sr-only">Loading...</span>
+              </div>
+            </div>
+          ) : post ? (
+            "Update"
+          ) : (
+            "Submit"
+          )}
         </Button>
       </div>
     </form>
