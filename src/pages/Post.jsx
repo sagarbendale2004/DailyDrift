@@ -1,43 +1,42 @@
 // eslint-disable-next-line no-unused-vars
-import React, { useEffect, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
-import service from "../appwrite/configuration";
+import React, { useEffect } from "react";
+import { Link, useParams } from "react-router-dom";
+import { useSelector, useDispatch } from "react-redux";
+import { deletePostAsync, fetchPostAsync } from "../store/postSlice";
 import Button from "../components/Button";
 import Container from "../components/Container/Container";
 import parse from "html-react-parser";
-import { useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
 
 export default function Post() {
-  const [post, setPost] = useState(null);
   const { slug } = useParams();
+  const dispatch = useDispatch();
   const navigate = useNavigate();
-  const userData = useSelector((state) => state.auth.userData);
 
-  const isAuthor = post && userData && post.userId === userData.$id;
+  const post = useSelector((state) =>
+    state.posts.posts.find((post) => post.slug === slug)
+  );
+  const userData = useSelector((state) => state.auth.userData);
 
   useEffect(() => {
     if (slug) {
-      service
-        .getPost(slug)
-        .then((post) => {
-          if (post) setPost(post);
-          else navigate("/");
-        })
-        .catch((error) => {
-          console.error("Error fetching post:", error);
-          navigate("/");
-        });
-    } else {
-      navigate("/");
+      dispatch(fetchPostAsync(slug));
     }
-  }, [slug, navigate]);
+  }, [slug, dispatch]);
 
-  const deletePost = async () => {
+  const isAuthor = post && userData && post.userId === userData.$id;
+
+  const onDeleteClick = async () => {
     try {
-      const status = await service.deletePost(post.$id);
-      if (status) {
-        await service.deleteFile(post.featuredimage);
-        navigate("/");
+      if (!post) {
+        console.error("No post data available for deletion.");
+        return;
+      }
+
+      const deleteStatus = await dispatch(deletePostAsync(post.$id)).unwrap();
+
+      if (deleteStatus) {
+        navigate.push("/");
       }
     } catch (error) {
       console.error("Error deleting post:", error);
@@ -49,11 +48,10 @@ export default function Post() {
       <Container>
         <div className="w-full flex justify-center mb-4 relative border rounded-xl p-2">
           <img
-            src={service.getFilePreview(post.featuredimage)}
+            src={post.featuredimage}
             alt={post.title}
             className="rounded-xl"
           />
-
           {isAuthor && (
             <div className="absolute right-6 top-6">
               <Link to={`/edit-post/${post.$id}`}>
@@ -61,7 +59,7 @@ export default function Post() {
                   Edit
                 </Button>
               </Link>
-              <Button bgColor="bg-red-500" onClick={deletePost}>
+              <Button bgColor="bg-red-500" onClick={onDeleteClick}>
                 Delete
               </Button>
             </div>

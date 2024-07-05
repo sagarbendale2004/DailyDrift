@@ -16,15 +16,12 @@ export class Service {
 
   async createPost({ title, slug, content, featuredimage, status, userId }) {
     try {
-      // Validate the slug length and characters here
-      if (slug.length > 36 || !/^[a-zA-Z0-9\-_.]+$/.test(slug)) {
-        throw new Error("Invalid slug format.");
-      }
+      const documentId = slug || ID.unique(); // Use slug as documentId or generate a unique ID
 
       return await this.databases.createDocument(
         config.appwriteDatabaseId,
         config.appwriteCollectionId,
-        slug,
+        documentId,
         {
           title,
           content,
@@ -41,11 +38,6 @@ export class Service {
 
   async updatePost(slug, { title, content, featuredimage, status }) {
     try {
-      // Validate the slug length and characters here
-      if (slug.length > 36 || !/^[a-zA-Z0-9\-_.]+$/.test(slug)) {
-        throw new Error("Invalid slug format.");
-      }
-
       return await this.databases.updateDocument(
         config.appwriteDatabaseId,
         config.appwriteCollectionId,
@@ -79,14 +71,20 @@ export class Service {
 
   async getPost(slug) {
     try {
-      return await this.databases.getDocument(
+      const document = await this.databases.getDocument(
         config.appwriteDatabaseId,
         config.appwriteCollectionId,
         slug
       );
+
+      if (!document || !document.$id) {
+        throw new Error(`Document not found for slug: ${slug}`);
+      }
+
+      return document;
     } catch (error) {
-      console.error("Appwrite service :: getPost :: error", error.message);
-      return null;
+      console.error("Appwrite service :: getPost :: error", error);
+      throw error; // Re-throw the error to propagate it correctly
     }
   }
 

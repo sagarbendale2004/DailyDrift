@@ -1,65 +1,81 @@
-import React, { useCallback, useState } from "react";
+import React, { useEffect, useCallback, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { Button, Input, Select } from "../index";
 import RTE from "../RTE";
-import { useNavigate } from "react-router-dom";
-import { useDispatch, useSelector } from "react-redux";
-import { createPost, updatePost } from "../../store/postSlice";
+import { useSelector, useDispatch } from "react-redux";
+import { fetchPostAsync } from "../../store/postSlice";
 import service from "../../appwrite/configuration";
 
 export default function PostForm({ post }) {
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+
   const { register, handleSubmit, watch, setValue, control, getValues } =
     useForm({
       defaultValues: {
         title: post?.title || "",
         slug: post?.$id || "",
+        featuredimage: post?.featuredimage || "",
         content: post?.content || "",
         status: post?.status || "active",
       },
     });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const navigate = useNavigate();
-  const dispatch = useDispatch();
   const userData = useSelector((state) => state.auth.userData);
 
+  useEffect(() => {
+    if (post?.$id) {
+      dispatch(fetchPostAsync(post.$id)).then((response) => {
+        const postData = response.payload;
+        console.log("postdata", postData);
+        if (postData) {
+          setValue("title", postData.title);
+          setValue("slug", postData.$id);
+          setValue("featuredimage", postData.featuredimage);
+          setValue("content", postData.content);
+          setValue("status", postData.status);
+        }
+      });
+    }
+  }, [dispatch, post, setValue]);
+
   const submit = async (data) => {
-    try {
-      setIsSubmitting(true);
-      let fileId;
-      if (data.featuredimage[0]) {
-        const file = await service.uploadFile(data.featuredimage[0]);
-        fileId = file.$id;
+    setIsSubmitting(true);
+
+    if (post) {
+      const file = data.featuredimage[0]
+        ? await service.uploadFile(data.featuredimage[0])
+        : null;
+
+      if (file) {
+        service.deleteFile(post.featuredimage);
       }
 
-      const postData = {
+      const dbPost = await service.updatePost(post.$id, {
         ...data,
-        featuredimage: fileId,
-        userId: userData.$id,
-      };
+        featuredimage: file ? file.$id : undefined,
+      });
 
-      if (post) {
-        dispatch(updatePost({ postId: post.$id, postData })).then((result) => {
-          if (result.type === "posts/updatePost/fulfilled") {
-            navigate(`/post/${result.payload.$id}`);
-          } else {
-            throw new Error("Failed to update post.");
-          }
-        });
-      } else {
-        dispatch(createPost(postData)).then((result) => {
-          if (result.type === "posts/createPost/fulfilled") {
-            navigate(`/post/${result.payload.$id}`);
-          } else {
-            throw new Error("Failed to create post.");
-          }
-        });
+      if (dbPost) {
+        navigate(`/post/${dbPost.$id}`);
       }
-    } catch (error) {
-      console.error("Error submitting post:", error);
-      alert("Failed to submit post. Please try again later.");
-    } finally {
-      setIsSubmitting(false);
+    } else {
+      const file = await service.uploadFile(data.featuredimage[0]);
+
+      if (file) {
+        const fileId = file.$id;
+        data.featuredimage = fileId;
+        const dbPost = await service.createPost({
+          ...data,
+          userId: userData.$id,
+        });
+
+        if (dbPost) {
+          navigate(`/post/${dbPost.$id}`);
+        }
+      }
     }
   };
 
@@ -121,7 +137,7 @@ export default function PostForm({ post }) {
           accept="image/png, image/jpg, image/jpeg, image/gif"
           {...register("featuredimage", { required: !post })}
         />
-        {post && (
+        {post && post.featuredimage && (
           <div className="w-full mb-4">
             <img
               src={service.getFilePreview(post.featuredimage)}
