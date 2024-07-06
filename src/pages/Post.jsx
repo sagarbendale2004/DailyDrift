@@ -1,28 +1,18 @@
 // eslint-disable-next-line no-unused-vars
 import React, { useEffect } from "react";
 import { Link, useParams } from "react-router-dom";
-import { useSelector, useDispatch } from "react-redux";
-import { deletePostAsync, fetchPostAsync } from "../store/postSlice";
 import Button from "../components/Button";
 import Container from "../components/Container/Container";
 import parse from "html-react-parser";
-import { useNavigate } from "react-router-dom";
+import { useSelector } from "react-redux";
 
 export default function Post() {
   const { slug } = useParams();
-  const dispatch = useDispatch();
-  const navigate = useNavigate();
 
   const post = useSelector((state) =>
     state.posts.posts.find((post) => post.slug === slug)
   );
   const userData = useSelector((state) => state.auth.userData);
-
-  useEffect(() => {
-    if (slug) {
-      dispatch(fetchPostAsync(slug));
-    }
-  }, [slug, dispatch]);
 
   const isAuthor = post && userData && post.userId === userData.$id;
 
@@ -31,12 +21,6 @@ export default function Post() {
       if (!post) {
         console.error("No post data available for deletion.");
         return;
-      }
-
-      const deleteStatus = await dispatch(deletePostAsync(post.$id)).unwrap();
-
-      if (deleteStatus) {
-        navigate.push("/");
       }
     } catch (error) {
       console.error("Error deleting post:", error);

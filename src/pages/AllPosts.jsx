@@ -1,45 +1,29 @@
 // eslint-disable-next-line no-unused-vars
-import React, { useEffect } from "react";
-import { useDispatch, useSelector } from "react-redux";
-import { fetchPostAsync, deletePostAsync } from "../store/postSlice";
-import Container from "../components/Container/Container";
-import PostCard from "../components/PostCard";
+import React, { useState, useEffect } from "react";
+import { Container, PostCard } from "../components";
+import service from "../appwrite/configuration";
 
 function AllPosts() {
-  const dispatch = useDispatch();
-  const posts = useSelector((state) => state.posts.posts);
-  const loading = useSelector((state) => state.posts.status === "loading");
-  const error = useSelector((state) => state.posts.error);
+  const [posts, setPosts] = useState([]);
 
   useEffect(() => {
-    dispatch(fetchPostAsync());
-  }, [dispatch]);
-
-  const handleDelete = (postId) => {
-    dispatch(deletePostAsync(postId));
-  };
+    service.getPosts().then((posts) => {
+      if (posts) {
+        setPosts(posts.documents);
+      }
+    });
+  }, []);
 
   return (
     <div className="w-full py-8">
       <Container>
-        {loading ? (
-          <p className="text-center">Loading posts...</p>
-        ) : error ? (
-          <p className="text-center text-red-500">
-            Failed to load posts. Please try again later.
-          </p>
-        ) : (
-          <div className="flex flex-wrap">
-            {posts.map((post) => (
-              <div
-                key={post.$id}
-                className="p-2 w-full sm:w-1/2 md:w-1/3 lg:w-1/4"
-              >
-                <PostCard {...post} onDelete={() => handleDelete(post.$id)} />
-              </div>
-            ))}
-          </div>
-        )}
+        <div className="flex flex-wrap">
+          {posts.map((post) => (
+            <div key={post.$id} className="p-2 w-1/4">
+              <PostCard {...post} />
+            </div>
+          ))}
+        </div>
       </Container>
     </div>
   );

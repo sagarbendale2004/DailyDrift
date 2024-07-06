@@ -1,33 +1,30 @@
 // eslint-disable-next-line no-unused-vars
-import React, { useEffect, useState } from "react";
+import React, { useEffect } from "react";
+import { useSelector, useDispatch } from "react-redux";
+import { useParams } from "react-router-dom";
+import { fetchPostAsync } from "../store/postSlice";
 import Container from "../components/Container/Container";
-import PostForm from "../components/Post-Form/PostForm";
-import service from "../appwrite/configuration";
-import { useNavigate, useParams } from "react-router-dom";
+import PostCard from "../components/PostCard";
 
-function EditPost() {
-  const [post, setPosts] = useState(null);
+function Post() {
   const { slug } = useParams();
-  const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const post = useSelector((state) =>
+    state.posts.posts.find((p) => p.slug === slug)
+  );
+  const status = useSelector((state) => state.posts.status);
 
   useEffect(() => {
-    if (slug) {
-      service.getPost(slug).then((post) => {
-        if (post) {
-          setPosts(post);
-        }
-      });
-    } else {
-      navigate("/");
+    if (slug && status === "idle") {
+      dispatch(fetchPostAsync(slug));
     }
-  }, [slug, navigate]);
-  return post ? (
+  }, [slug, dispatch, status]);
+
+  return (
     <div className="py-8">
-      <Container>
-        <PostForm post={post} />
-      </Container>
+      <Container>{post ? <PostCard {...post} /> : <p>Loading...</p>}</Container>
     </div>
-  ) : null;
+  );
 }
 
-export default EditPost;
+export default Post;

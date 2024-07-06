@@ -1,22 +1,27 @@
 import config from "../config/config";
 import { Client, Databases, Storage, ID, Query } from "appwrite";
 
-export class Service {
-  client = new Client();
+class Service {
+  client;
   databases;
   bucket;
 
   constructor() {
-    this.client
+    this.client = new Client()
       .setEndpoint(config.appwriteUrl)
       .setProject(config.appwriteProjectId);
+
     this.databases = new Databases(this.client);
     this.bucket = new Storage(this.client);
   }
 
   async createPost({ title, slug, content, featuredimage, status, userId }) {
     try {
-      const documentId = slug || ID.unique(); // Use slug as documentId or generate a unique ID
+      const documentId = slug || ID.unique();
+
+      if (!title || !slug || !content || !featuredimage || !status || !userId) {
+        throw new Error("Missing required fields");
+      }
 
       return await this.databases.createDocument(
         config.appwriteDatabaseId,
@@ -25,20 +30,21 @@ export class Service {
         {
           title,
           content,
+          slug,
           featuredimage,
           status,
           userId,
         }
       );
     } catch (error) {
-      console.log("Appwrite service :: createPost :: error", error);
+      console.error("Appwrite service :: createPost :: error", error);
       throw error;
     }
   }
 
   async updatePost(slug, { title, content, featuredimage, status }) {
     try {
-      return await this.databases.updateDocument(
+      const response = await this.databases.updateDocument(
         config.appwriteDatabaseId,
         config.appwriteCollectionId,
         slug,
@@ -49,9 +55,11 @@ export class Service {
           status,
         }
       );
+
+      return response;
     } catch (error) {
-      console.log("Appwrite service :: updatePost :: error", error);
-      throw error; // Ensure errors propagate correctly
+      console.error("Appwrite service :: updatePost :: error", error);
+      throw error;
     }
   }
 
@@ -64,7 +72,7 @@ export class Service {
       );
       return true;
     } catch (error) {
-      console.error("Appwrite service :: deletePost :: error", error.message);
+      console.error("Appwrite service :: deletePost :: error", error);
       return false;
     }
   }
@@ -84,35 +92,37 @@ export class Service {
       return document;
     } catch (error) {
       console.error("Appwrite service :: getPost :: error", error);
-      throw error; // Re-throw the error to propagate it correctly
+      throw error;
     }
   }
 
   async getPosts(queries = [Query.equal("status", "active")]) {
     try {
-      return await this.databases.listDocuments(
+      const response = await this.databases.listDocuments(
         config.appwriteDatabaseId,
         config.appwriteCollectionId,
         queries
       );
+
+      return response;
     } catch (error) {
-      console.error("Appwrite service :: getPosts :: error", error.message);
+      console.error("Appwrite service :: getPosts :: error", error);
       return null;
     }
   }
 
-  // File upload service
-
   async uploadFile(file) {
     try {
-      return await this.bucket.createFile(
+      const response = await this.bucket.createFile(
         config.appwriteBucketId,
         ID.unique(),
         file
       );
+
+      return response;
     } catch (error) {
-      console.error("Appwrite service :: uploadFile :: error", error.message);
-      return null;
+      console.error("Appwrite service :: uploadFile :: error", error);
+      throw error;
     }
   }
 
@@ -121,7 +131,7 @@ export class Service {
       await this.bucket.deleteFile(config.appwriteBucketId, fileId);
       return true;
     } catch (error) {
-      console.error("Appwrite service :: deleteFile :: error", error.message);
+      console.error("Appwrite service :: deleteFile :: error", error);
       return false;
     }
   }

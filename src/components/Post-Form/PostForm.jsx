@@ -1,81 +1,57 @@
+// eslint-disable-next-line no-unused-vars
 import React, { useEffect, useCallback, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { Button, Input, Select } from "../index";
 import RTE from "../RTE";
-import { useSelector, useDispatch } from "react-redux";
-import { fetchPostAsync } from "../../store/postSlice";
+import { useSelector } from "react-redux";
 import service from "../../appwrite/configuration";
 
-export default function PostForm({ post }) {
-  const dispatch = useDispatch();
-  const navigate = useNavigate();
-
+export default function PostForm({ setPosts }) {
   const { register, handleSubmit, watch, setValue, control, getValues } =
     useForm({
       defaultValues: {
-        title: post?.title || "",
-        slug: post?.$id || "",
-        featuredimage: post?.featuredimage || "",
-        content: post?.content || "",
-        status: post?.status || "active",
+        title: "",
+        slug: "",
+        featuredimage: "",
+        content: "",
+        status: "",
+        userId: "",
       },
     });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const userData = useSelector((state) => state.auth.userData);
 
-  useEffect(() => {
-    if (post?.$id) {
-      dispatch(fetchPostAsync(post.$id)).then((response) => {
-        const postData = response.payload;
-        console.log("postdata", postData);
-        if (postData) {
-          setValue("title", postData.title);
-          setValue("slug", postData.$id);
-          setValue("featuredimage", postData.featuredimage);
-          setValue("content", postData.content);
-          setValue("status", postData.status);
-        }
-      });
-    }
-  }, [dispatch, post, setValue]);
-
-  const submit = async (data) => {
+  const handleAdd = async (data) => {
     setIsSubmitting(true);
 
-    if (post) {
-      const file = data.featuredimage[0]
-        ? await service.uploadFile(data.featuredimage[0])
-        : null;
-
-      if (file) {
-        service.deleteFile(post.featuredimage);
-      }
-
-      const dbPost = await service.updatePost(post.$id, {
-        ...data,
-        featuredimage: file ? file.$id : undefined,
-      });
-
-      if (dbPost) {
-        navigate(`/post/${dbPost.$id}`);
-      }
-    } else {
+    try {
+      // Upload the file
       const file = await service.uploadFile(data.featuredimage[0]);
 
-      if (file) {
-        const fileId = file.$id;
-        data.featuredimage = fileId;
-        const dbPost = await service.createPost({
-          ...data,
-          userId: userData.$id,
-        });
+      // Prepare the payload
+      const payload = {
+        title: data.title,
+        slug: data.slug,
+        content: data.content,
+        featuredimage: file.$id,
+        status: data.status,
+        userId: userData.$id,
+      };
 
-        if (dbPost) {
-          navigate(`/post/${dbPost.$id}`);
-        }
+      console.log("Payload:", payload);
+
+      // Create the post
+      const response = await service.createPost(payload);
+
+      // Update the posts state
+      if (setPosts) {
+        setPosts((prevState) => [response, ...prevState]);
       }
+      setIsSubmitting(false);
+    } catch (error) {
+      console.error("Failed to submit post: ", error.message);
+      setIsSubmitting(false);
     }
   };
 
@@ -90,7 +66,7 @@ export default function PostForm({ post }) {
     return "";
   }, []);
 
-  React.useEffect(() => {
+  useEffect(() => {
     const subscription = watch((value, { name }) => {
       if (name === "title") {
         setValue("slug", slugTransform(value.title), { shouldValidate: true });
@@ -103,7 +79,7 @@ export default function PostForm({ post }) {
   }, [watch, slugTransform, setValue]);
 
   return (
-    <form onSubmit={handleSubmit(submit)} className="flex flex-wrap">
+    <form onSubmit={handleSubmit(handleAdd)} className="flex flex-wrap">
       <div className="w-2/3 px-2">
         <Input
           label="Title :"
@@ -135,17 +111,8 @@ export default function PostForm({ post }) {
           type="file"
           className="mb-4"
           accept="image/png, image/jpg, image/jpeg, image/gif"
-          {...register("featuredimage", { required: !post })}
+          {...register("featuredimage", { required: true })}
         />
-        {post && post.featuredimage && (
-          <div className="w-full mb-4">
-            <img
-              src={service.getFilePreview(post.featuredimage)}
-              alt={post.title}
-              className="rounded-lg"
-            />
-          </div>
-        )}
         <Select
           options={["active", "inactive"]}
           label="Status"
@@ -154,7 +121,7 @@ export default function PostForm({ post }) {
         />
         <Button
           type="submit"
-          bgColor={post ? "bg-green-500" : undefined}
+          bgColor={setPosts ? "bg-green-500" : undefined}
           className="w-full"
           disabled={isSubmitting}
         >
@@ -165,7 +132,7 @@ export default function PostForm({ post }) {
                 <span className="sr-only">Loading...</span>
               </div>
             </div>
-          ) : post ? (
+          ) : setPosts ? (
             "Update"
           ) : (
             "Submit"
