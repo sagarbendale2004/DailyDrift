@@ -17,6 +17,9 @@ function PostCard({ $id, title, featuredimage, content, onDelete }) {
         </div>
         <h2 className="font-bold text-xl">{title}</h2>
         <p className="text-sm">{content}</p>
+        <button className="bg-blue-500 text-white p-2 rounded-lg w-full mt-2">
+          read-more
+        </button>
       </Link>
       {onDelete && (
         <Button onClick={onDelete} className="mt-4 bg-red-500">
